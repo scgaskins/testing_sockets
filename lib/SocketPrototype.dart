@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 const int port = 4444;
 
+// A prototype of the host
+
 class SocketPrototype {
   Map<String, String> guestNamesToIps = new Map();
   String testVariable;
@@ -28,7 +30,8 @@ class SocketPrototype {
     String incomingData = String.fromCharCodes(data);
     print(incomingData);
     print(ip);
-    _sendDataBackToGuest(ip, incomingData);
+    testVariable = incomingData;
+    //_sendDataBackToGuest(ip, incomingData);
   }
 
   Future<void> _sendDataBackToGuest(String guestIp, String data) async {
