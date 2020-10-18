@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 
 // A prototype of the guest users
 
@@ -8,28 +9,27 @@ const int port = 4444;
 class GuestPrototype{
   String _hostIP;
   String name;
-  bool _gameStarted;
+  List guestList;
 
-  GuestPrototype(this._hostIP, this.name) {
-    _gameStarted = false;
-
-  }
-
+  GuestPrototype(this.name, this._hostIP);
 
   Future<void> connectToHost() async {
     try {
       print('Connecting...');
       Socket socket = await Socket.connect(_hostIP, port);
-      print("Connected.");
+      print('connected');
       socket.write(name);
-      socket.listen(_listenToHost,
-      onDone: () {socket.close();});
-    } on SocketException catch(e) {
+      print('Awaiting response');
+      socket.listen(_handleData,
+          onDone: () {socket.close();});
+    } on SocketException catch (e) {
       print(e.message);
     }
   }
 
-  void _listenToHost(Uint8List data) {
-    print(new String.fromCharCodes(data));
+  void _handleData(Uint8List data) {
+    print('received response');
+    guestList = JsonCodec().decode(String.fromCharCodes(data));
+    print(guestList.runtimeType);
   }
 }

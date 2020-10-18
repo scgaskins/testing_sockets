@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'dart:typed_data';
 
@@ -7,56 +8,56 @@ const int port = 4444;
 // A prototype of the host
 
 class SocketPrototype {
-  Map<String, String> guestNamesToIps = new Map();
   String testVariable;
+  GamePhase phase;
+  Map<String, Socket> guestSockets;
 
-  Future<void> setupHostServer() async {
+  SocketPrototype() {
+    phase = GamePhase.SettingUp;
+    guestSockets = new Map();
+    //setupServer();
+  }
+
+  Future<void> setupServer() async {
     try {
-      ServerSocket serverSocket = await ServerSocket.bind(InternetAddress.anyIPv4, port);
-      serverSocket.listen(_listenToSocket);
-    } on SocketException catch(e) {
-      print(e.message);
-    }
-  }
+      ServerSocket server = await ServerSocket.bind(InternetAddress.anyIPv4, port);
+      server.listen(_listenToSocket);
 
-  void _listenToSocket(Socket socket) {
-    socket.listen((event) {
-      _checkIncomingData(socket.remoteAddress.address, event);
-    });
-  }
-
-  void _checkIncomingData(String ip, Uint8List data) {
-    print('received data');
-    String incomingData = String.fromCharCodes(data);
-    print(incomingData);
-    print(ip);
-    testVariable = incomingData;
-    //_sendDataBackToGuest(ip, incomingData);
-  }
-
-  Future<void> _sendDataBackToGuest(String guestIp, String data) async {
-    try {
-      Socket socket = await Socket.connect(guestIp, port);
-      socket.write(data);
-      socket.close();
     } on SocketException catch (e) {
       print(e.message);
     }
   }
 
-  void _sendGuestListToAllGuests() async {
-    for (String ip in guestNamesToIps.keys) {
-      try {
-        Socket socket = await Socket.connect(ip, port);
-        for (String ip2 in guestNamesToIps.keys) {
-          if (ip != ip2) {
-            socket.writeln(guestNamesToIps[ip]);
-          }
-        }
-        socket.close();
-      } on SocketException catch(e) {
-        print(e.message);
+  void _listenToSocket(Socket socket) {
+    socket.listen((data) {
+      if (phase == GamePhase.SettingUp) {
+        _addNewGuest(socket, data);
       }
+    });
+  }
+
+  void _handleIncomingData(String ip, Uint8List data) {
+
+  }
+
+  void _addNewGuest(Socket socket, Uint8List data) {
+    String guestName = String.fromCharCodes(data);
+    guestSockets[guestName] = socket;
+    _sendGuestListToAllGuests();
+    //socket.write('Hello there $guestName');
+  }
+
+  Future<void> _sendGuestListToAllGuests() async {
+    for (String name in guestSockets.keys) {
+      print(guestSockets.keys.toList());
+      guestSockets[name].write(JsonCodec().encode(guestSockets.keys.toList()));
     }
   }
+}
+
+enum GamePhase {
+  SettingUp,
+  Started,
+  Ended,
+  ScoresTotaled
 }
